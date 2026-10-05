@@ -1,6 +1,28 @@
-@JensenOnline.Api_HostAddress = http://localhost:5204
+@baseUrl = https://localhost:8443
 
-GET {{JensenOnline.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### 1. Produkter (öppet för alla)
+GET {{baseUrl}}/api/products
 
-###
+### 2. Vem är inloggad? (ska ge 401 innan du loggat in)
+GET {{baseUrl}}/api/auth/me
+
+### 3. Logga in som kund
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "kund@jensenonline.se", "password": "Kund-Demo-2026!" }
+
+### 4. Vem är inloggad? (ska nu ge kundens e-post och rollen Customer)
+GET {{baseUrl}}/api/auth/me
+
+### 5. Försök göra dig själv till admin vid registrering
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "hackare@test.se", "password": "EttLangtLosenord123", "role": "Admin" }
+
+### 6. Logga ut
+POST {{baseUrl}}/api/auth/logout
+
+### 7. Vem är inloggad? (ska ge 401 igen)
+GET {{baseUrl}}/api/auth/me

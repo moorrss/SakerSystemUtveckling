@@ -1,18 +1,37 @@
 using JensenOnline.Api.Models;
-using JensenOnline.Api.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace JensenOnline.Api.Data;
 
 public static class DbSeeder
 {
-    public static async Task SeedAsync(IServiceProvider services)
+    public const string AdminRole = "Admin";
+    public const string CustomerRole = "Customer";
+
+    public static async Task SeedAsync(IServiceProvider services, IHostEnvironment env)
     {
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
-        // Skapar databasen om den inte finns. I produktion används migrationer.
         await db.Database.EnsureCreatedAsync();
+
+        // Rollerna Admin och Customer
+        foreach (var role in new[] { AdminRole, CustomerRole })
+        {
+            if (!await roleManager.RoleExistsAsync(role))
+                await roleManager.CreateAsync(new IdentityRole(role));
+        }
+
+        // Testkonton skapas BARA i utvecklingsmiljön.
+        // Admins kan aldrig skapas via API:t, bara här eller av en befintlig admin.
+        if (env.IsDevelopment())
+        {
+            await CreateUserAsync(userManager, "admin@jensenonline.se", "Admin-Demo-2026!", AdminRole);
+            await CreateUserAsync(userManager, "kund@jensenonline.se", "Kund-Demo-2026!", CustomerRole);
+        }
 
         if (!await db.Products.AnyAsync())
         {
@@ -25,5 +44,15 @@ public static class DbSeeder
             );
             await db.SaveChangesAsync();
         }
+    }
+
+    private static async Task CreateUserAsync(UserManager<AppUser> userManager, string email, string password, string role)
+    {
+        if (await userManager.FindByEmailAsync(email) is not null) return;
+
+        var user = new AppUser { UserName = email, Email = email, EmailConfirmed = true };
+        var result = await userManager.CreateAsync(user, password);
+        if (result.Succeeded)
+            await userManager.AddToRoleAsync(user, role);
     }
 }

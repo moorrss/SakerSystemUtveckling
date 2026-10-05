@@ -1,5 +1,6 @@
 using JensenOnline.Api.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace JensenOnline.Api.Controllers;
@@ -13,6 +14,7 @@ public class ProductsController : ControllerBase
     public ProductsController(AppDbContext db) => _db = db;
 
     [HttpGet]
+    [AllowAnonymous] // Alla får läsa produkter, även icke-inloggade 
     public async Task<IActionResult> GetProducts()
     {
         // Select gör att bara de fält vi väljer skickas ut (inte hela databasentiteten)
