@@ -117,3 +117,6 @@ POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 { "email": "kund@jensenonline.se", "password": "fel-losenord" }
+
+### 25. Admin läser audit-loggen (logga in som admin först, anrop 16) -> 200
+GET {{baseUrl}}/api/admin/audit

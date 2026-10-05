@@ -4,6 +4,8 @@ using JensenOnline.Api.Data.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using JensenOnline.Api.Core.Interfaces;
+using JensenOnline.Api.Core.Services;
 
 namespace JensenOnline.Api.Controllers;
 
@@ -12,9 +14,14 @@ namespace JensenOnline.Api.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly IAuditService _audit;
 
-    public ProductsController(AppDbContext db) => _db = db;
-
+    //Här sätts DI upp för controllern
+    public ProductsController(AppDbContext db, IAuditService audit)
+    {
+        _db = db;
+        _audit = audit;
+    }
     // Visa och söka är öppet för alla
     [HttpGet]
     [AllowAnonymous]
@@ -69,6 +76,11 @@ public class ProductsController : ControllerBase
         _db.Products.Add(product);
         await _db.SaveChangesAsync();
 
+        
+        // Admin-åtgärder loggas så att det går att se vem som ändrade vad (T5)
+        await _audit.LogAsync(AuditService.Actions.ProductCreated, true,
+            $"Id {product.Id}: {product.Name}, pris {product.Price}");
+
         var result = new ProductDto(product.Id, product.Name, product.Description, product.Price, product.Stock);
         return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, result);
     }
@@ -81,11 +93,20 @@ public class ProductsController : ControllerBase
         var product = await _db.Products.FirstOrDefaultAsync(p => p.Id == id);
         if (product is null) return NotFound();
 
+        
+        var oldPrice = product.Price; // spara gamla priset innan det skrivs över på raden nedan
+
         product.Name = dto.Name.Trim();
         product.Description = dto.Description.Trim();
         product.Price = dto.Price;
         product.Stock = dto.Stock;
         await _db.SaveChangesAsync();
+
+        
+        // Prisändringar är extra viktiga att kunna spåra (t.ex. om ett admin-konto kapas)
+        await _audit.LogAsync(AuditService.Actions.ProductUpdated, true,
+            $"Id {product.Id}: {product.Name}, pris {oldPrice} -> {product.Price}");
+
 
         return Ok(new ProductDto(product.Id, product.Name, product.Description, product.Price, product.Stock));
     }
@@ -103,6 +124,13 @@ public class ProductsController : ControllerBase
 
         _db.Products.Remove(product);
         await _db.SaveChangesAsync();
+
+        _db.Products.Remove(product);
+        await _db.SaveChangesAsync();
+
+        await _audit.LogAsync(AuditService.Actions.ProductDeleted, true,
+            $"Id {id}: {product.Name}");
+
         return NoContent();
     }
 

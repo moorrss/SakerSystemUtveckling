@@ -95,6 +95,7 @@
         <button type="button" class="tab active" data-tab="admin-products">Produkter</button>
         <button type="button" class="tab" data-tab="admin-orders">Alla ordrar</button>
         <button type="button" class="tab" data-tab="admin-users">Användare</button>
+        <button type="button" class="tab" data-tab="admin-audit">Audit-logg</button>
       </div>
 
       <div id="admin-products" class="tab-panel">
@@ -137,6 +138,14 @@
         <table class="table">
           <thead><tr><th>E-post</th><th>Roller</th><th>Status</th><th></th></tr></thead>
           <tbody id="admin-user-rows"></tbody>
+        </table>
+      </div>
+      
+      <div id="admin-audit" class="tab-panel" hidden>
+        <p class="muted">De senaste 200 händelserna. Loggen kan bara läsas, inte ändras eller raderas.</p>
+        <table class="table">
+          <thead><tr><th>Tid</th><th>Händelse</th><th>Användare</th><th>Detaljer</th><th>IP</th><th>Resultat</th></tr></thead>
+          <tbody id="admin-audit-rows"></tbody>
         </table>
       </div>
     </section>

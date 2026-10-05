@@ -5,6 +5,7 @@ using JensenOnline.Api.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using JensenOnline.Api.Core.Interfaces;
 
 namespace JensenOnline.Api.Controllers;
 
@@ -14,8 +15,14 @@ namespace JensenOnline.Api.Controllers;
 public class OrdersController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly IAuditService _audit;
 
-    public OrdersController(AppDbContext db) => _db = db;
+    //Här sätts DI upp för controllern
+    public OrdersController(AppDbContext db, IAuditService audit)
+    {
+        _db = db;
+        _audit = audit;
+    }
 
     [HttpPost]
     [Consumes("application/json")]
@@ -67,6 +74,10 @@ public class OrdersController : ControllerBase
         await _db.SaveChangesAsync();
         await transaction.CommitAsync();
 
+        // Logga ordern med totalsumman som SERVERN räknade ut (T3, T5)
+        await _audit.LogAsync(AuditService.Actions.OrderCreated, true,
+            $"Order {order.Id}, totalt {order.TotalAmount} kr");
+
         return CreatedAtAction(nameof(GetById), new { id = order.Id }, ToDto(order));
     }
 
@@ -98,8 +109,15 @@ public class OrdersController : ControllerBase
             .Include(o => o.Items).ThenInclude(i => i.Product)
             .FirstOrDefaultAsync(o => o.Id == id && (o.UserId == userId || isAdmin));
 
-        // 404 i stället för 403, så att angriparen inte ens får veta att ordern finns
-        if (order is null) return NotFound();
+        if (order is null)
+        {
+            // Finns ordern, men tillhör någon annan? Då är det ett IDOR-försök som ska loggas (T6, T5).
+            // Användaren får ändå 404, så angriparen får inte veta att ordern finns
+            if (await _db.Orders.AnyAsync(o => o.Id == id))
+                await _audit.LogAsync(AuditService.Actions.OrderAccessDenied, false, $"Försökte läsa order {id}");
+
+            return NotFound();
+        }
 
         return Ok(ToDto(order));
     }

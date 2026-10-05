@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using JensenOnline.Api.Core.Interfaces;
 
 namespace JensenOnline.Api.Controllers;
 
@@ -17,11 +18,13 @@ public class AdminController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly UserManager<AppUser> _userManager;
+    private readonly IAuditService _audit;
 
-    public AdminController(AppDbContext db, UserManager<AppUser> userManager)
+    public AdminController(AppDbContext db, UserManager<AppUser> userManager, IAuditService audit)
     {
         _db = db;
         _userManager = userManager;
+        _audit = audit;
     }
 
     [HttpGet("orders")]
@@ -62,13 +65,31 @@ public class AdminController : ControllerBase
         var user = await _userManager.FindByIdAsync(id);
         if (user is null) return NotFound();
 
-        if (dto.Locked)
+              if (dto.Locked)
+        {
             await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+            await _audit.LogAsync(AuditService.Actions.UserLocked, true, $"Låste {user.Email}");
+        }
         else
         {
             await _userManager.SetLockoutEndDateAsync(user, null);
             await _userManager.ResetAccessFailedCountAsync(user);
+            await _audit.LogAsync(AuditService.Actions.UserUnlocked, true, $"Låste upp {user.Email}");
         }
         return NoContent();
+    }
+
+        // Audit-loggen kan bara LÄSAS. Det finns ingen endpoint för att ändra eller radera poster,
+    // så inte ens en admin kan sopa igen spåren efter sig (T5)
+    [HttpGet("audit")]
+    public async Task<ActionResult<IReadOnlyList<AuditLogDto>>> GetAuditLog()
+    {
+        var entries = await _db.AuditLogs
+            .AsNoTracking()
+            .OrderByDescending(a => a.Id)
+            .Take(200) // de senaste 200, så att svaret inte blir för stort (T8)
+            .Select(a => new AuditLogDto(a.Timestamp, a.Email, a.Action, a.Details, a.IpAddress, a.Success))
+            .ToListAsync();
+        return Ok(entries);
     }
 }

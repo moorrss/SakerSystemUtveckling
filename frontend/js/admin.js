@@ -27,6 +27,7 @@ function showTab(tabId) {
   if (tabId === 'admin-products') loadAdminProducts();
   if (tabId === 'admin-orders') loadAdminOrders();
   if (tabId === 'admin-users') loadAdminUsers();
+  if (tabId === 'admin-audit') loadAuditLog();
 }
 
 // ---------- Produkter ----------
@@ -173,4 +174,38 @@ async function setLock(user, locked) {
   } catch (error) {
     handleError(error);
   }
+}
+
+// ---------- Audit-logg ----------
+
+async function loadAuditLog() {
+  const rows = document.getElementById('admin-audit-rows');
+  try {
+    const entries = await api('/api/admin/audit');
+    clear(rows);
+    if (entries.length === 0) {
+      rows.append(el('tr', {}, el('td', { colspan: 6, class: 'muted' }, 'Inga händelser än.')));
+    }
+    for (const a of entries) {
+      // All text läggs in med el(), som använder textnoder. Även om en angripare
+      // lyckas få in <script> i t.ex. e-postfältet visas det bara som text (T4)
+      rows.append(el('tr', {},
+        el('td', {}, formatTime(a.timestamp)),
+        el('td', {}, a.action),
+        el('td', {}, a.email ?? '–'),
+        el('td', {}, a.details ?? ''),
+        el('td', {}, a.ipAddress ?? ''),
+        el('td', { class: a.success ? 'status-ok' : 'status-fail' }, a.success ? 'OK' : 'Nekad')
+      ));
+    }
+  } catch (error) {
+    handleError(error);
+  }
+}
+
+// SQLite sparar tiden utan tidszon. Vi vet att den är UTC, så vi lägger till "Z"
+// för att webbläsaren ska räkna om den till svensk tid
+function formatTime(timestamp) {
+  const utc = timestamp.endsWith('Z') ? timestamp : timestamp + 'Z';
+  return new Date(utc).toLocaleString('sv-SE');
 }
