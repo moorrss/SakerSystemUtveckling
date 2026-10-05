@@ -102,6 +102,8 @@ builder.Services.AddControllers();
 var app = builder.Build();
 
 app.UseHttpsRedirection();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseAuthentication();   // vem är du?
 app.UseAuthorization();    // vad får du göra?
 app.MapControllers();
