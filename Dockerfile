@@ -13,6 +13,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
 
+RUN mkdir -p /app/data && chown $APP_UID /app/data
 
 USER $APP_UID
 
