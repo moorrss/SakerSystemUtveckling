@@ -1,3 +1,7 @@
+using System.Threading.RateLimiting;
+using JensenOnline.Api.Middleware;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using JensenOnline.Api.Data;
 using JensenOnline.Api.Models;
@@ -10,6 +14,13 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ---------- Kestrel: dölj serverversion och begränsa anropens storlek (T7, T8) ----------
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.AddServerHeader = false;                   // ingen "Server: Kestrel" i svaren
+    options.Limits.MaxRequestBodySize = 1024 * 1024;   // max 1 MB per anrop
+});
 
 // ---------- Databas (T2) ----------
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -97,13 +108,77 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
-builder.Services.AddControllers();
+// ---------- Rate limiting: skydd mot brute force och överbelastning (T1, T8) ----------
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Alla anrop: max 200 per minut och IP-adress
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = 200, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+
+    // Inloggning och registrering: max 20 per minut och IP-adress
+    options.AddPolicy("auth", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.Headers.RetryAfter = "60";
+        await context.HttpContext.Response.WriteAsJsonAsync(new ProblemDetails
+        {
+            Status = StatusCodes.Status429TooManyRequests,
+            Title = "För många anrop. Försök igen om en stund."
+        }, cancellationToken);
+    };
+});
+
+// ---------- Controllers och säker felhantering (T7) ----------
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Trasig JSON ger ett generiskt meddelande, inte tolkarens interna felbeskrivning
+        options.AllowInputFormatterExceptionMessages = false;
+    });
+
+builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
+// ---------- Central felhantering (T7) ----------
+// Användaren får ett generiskt svar med en felkod. Detaljerna hamnar BARA i loggen.
+app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
+{
+    var errorId = $"ERR-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
+    var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+
+    app.Logger.LogError(exception, "Ohanterat fel {ErrorId} vid {Method} {Path}",
+        errorId, context.Request.Method, context.Request.Path);
+
+    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+    await context.Response.WriteAsJsonAsync(new ProblemDetails
+    {
+        Status = StatusCodes.Status500InternalServerError,
+        Title = "Ett fel uppstod. Försök igen senare.",
+        Extensions = { ["errorId"] = errorId }
+    });
+}));
+
+// Tomma felsvar (401, 403, 404) får ett enhetligt ProblemDetails-svar
+app.UseStatusCodePages();
+
 app.UseHttpsRedirection();
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();   // vem är du?
 app.UseAuthorization();    // vad får du göra?
 app.MapControllers();

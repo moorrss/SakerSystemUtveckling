@@ -5,6 +5,7 @@ using JensenOnline.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace JensenOnline.Api.Controllers;
 
@@ -29,6 +30,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("register")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth")] 
     public async Task<IActionResult> Register(RegisterDto dto)
     {
         var user = new AppUser { UserName = dto.Email, Email = dto.Email };
@@ -52,6 +54,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth")] 
     public async Task<IActionResult> Login(LoginDto dto)
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);

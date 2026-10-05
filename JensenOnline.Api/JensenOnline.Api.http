@@ -97,3 +97,23 @@ Content-Type: application/json
 
 ### 20. Admin ser alla ordrar -> ska ge 200 och kundens order
 GET {{baseUrl}}/api/admin/orders
+
+### ==========================================
+
+### 21. Server-header och security headers -> titta i svarets headers
+GET {{baseUrl}}/api/products
+
+### 22. ATTACK (T7): trasig JSON -> 400 utan interna detaljer
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": 
+
+### 23. Kund mot admin -> 403 har nu ett ProblemDetails-svar (logga in som kund först)
+GET {{baseUrl}}/api/admin/users
+
+### 24. ATTACK (T1/T8): brute force -> skicka det här ca 20 gånger snabbt, sedan 429
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "kund@jensenonline.se", "password": "fel-losenord" }
