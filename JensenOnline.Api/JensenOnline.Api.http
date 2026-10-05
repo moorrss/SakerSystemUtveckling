@@ -26,3 +26,74 @@ POST {{baseUrl}}/api/auth/logout
 
 ### 7. Vem är inloggad? (ska ge 401 igen)
 GET {{baseUrl}}/api/auth/me
+
+
+### ==========================================
+
+### 8. Logga in som kund
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "kund@jensenonline.se", "password": "Kund-Demo-2026!" }
+
+### 9. ATTACK (T9): kund försöker skapa en produkt -> ska ge 403
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+
+{ "name": "Hackad produkt", "description": "", "price": 1, "stock": 1 }
+
+### 10. ATTACK (T9): kund försöker lista alla användare -> ska ge 403
+GET {{baseUrl}}/api/admin/users
+
+### 11. ATTACK (T3): kund skickar med eget pris -> servern ska ignorera det
+# @name kundOrder
+POST {{baseUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "items": [ { "productId": 1, "quantity": 2, "price": 1 } ],
+  "shippingAddress": "Kundgatan 1, Stockholm",
+  "totalAmount": 1
+}
+
+### 12. Logga in som hackare (kontot från anrop 5)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "hackare@test.se", "password": "EttLangtLosenord123" }
+
+### 13. ATTACK (T6/IDOR): hackaren försöker läsa kundens order -> ska ge 404
+GET {{baseUrl}}/api/orders/{{kundOrder.response.body.$.id}}
+
+### 14. ATTACK (T2): SQL injection i sökningen -> ska ge 0 träffar
+GET {{baseUrl}}/api/products?search=' OR 1=1 --
+
+### 15. ATTACK (T8): för många produkter i ett anrop -> ska ge 400
+GET {{baseUrl}}/api/products?pageSize=100000
+
+### 16. Logga in som admin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "admin@jensenonline.se", "password": "Admin-Demo-2026!" }
+
+### 17. Admin skapar en produkt -> ska ge 201
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+
+{ "name": "Webbkamera HD", "description": "1080p med mikrofon.", "price": 799, "stock": 30 }
+
+### 18. ATTACK (T4): XSS i produktnamn -> ska ge 400
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+
+{ "name": "<script>alert('XSS')</script>", "description": "", "price": 10, "stock": 1 }
+
+### 19. Ogiltig data: negativt pris och tomt namn -> ska ge 400
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+
+{ "name": "", "description": "", "price": -100, "stock": -5 }
+
+### 20. Admin ser alla ordrar -> ska ge 200 och kundens order
+GET {{baseUrl}}/api/admin/orders
