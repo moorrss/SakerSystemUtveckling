@@ -1,0 +1,13 @@
+namespace JensenOnline.Api.Data.Entities;
+
+public class AuditLog
+{
+    public long Id { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public string? UserId { get; set; }
+    public string? Email { get; set; }
+    public string Action { get; set; } = "";
+    public string? Details { get; set; }
+    public string? IpAddress { get; set; }
+    public bool Success { get; set; }
+}

@@ -1,17 +1,18 @@
 using System.Threading.RateLimiting;
 using JensenOnline.Api.Middleware;
-using Microsoft.AspNetCore.Diagnostics;
+using JensenOnline.Api.ErrorHandling;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using JensenOnline.Api.Data;
-using JensenOnline.Api.Models;
-using JensenOnline.Api.Services;
+using JensenOnline.Api.Data.Entities;
+using JensenOnline.Api.Core.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using JensenOnline.Api.Core.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,7 +66,11 @@ var jwtSettings = new JwtSettings
     SigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
 };
 builder.Services.AddSingleton(jwtSettings);
-builder.Services.AddScoped<TokenService>();
+
+//Här sätts DI upp för våra tjänster. Controllers känner bara till interfacet, inte klassen
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddHttpContextAccessor();   // ger AuditService tillgång till IP och inloggad användare
+builder.Services.AddScoped<IAuditService, AuditService>();
 
 // ---------- Autentisering: JWT som läses från HttpOnly-cookien ----------
 builder.Services
@@ -95,6 +100,15 @@ builder.Services
             {
                 context.Token = context.Request.Cookies[TokenService.CookieName];
                 return Task.CompletedTask;
+            },
+            
+            // Körs när en inloggad användare saknar rätt roll (403), t.ex. en kund som anropar /api/admin.
+            // Försöket loggas så att det går att spåra i efterhand (T5)
+            OnForbidden = async context =>
+            {
+                var audit = context.HttpContext.RequestServices.GetRequiredService<IAuditService>();
+                await audit.LogAsync(AuditService.Actions.AccessDenied, false,
+                    $"{context.Request.Method} {context.Request.Path}");
             }
         };
     });
@@ -145,28 +159,14 @@ builder.Services
         options.AllowInputFormatterExceptionMessages = false;
     });
 
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
 // ---------- Central felhantering (T7) ----------
 // Användaren får ett generiskt svar med en felkod. Detaljerna hamnar BARA i loggen.
-app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
-{
-    var errorId = $"ERR-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
-    var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
-
-    app.Logger.LogError(exception, "Ohanterat fel {ErrorId} vid {Method} {Path}",
-        errorId, context.Request.Method, context.Request.Path);
-
-    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-    await context.Response.WriteAsJsonAsync(new ProblemDetails
-    {
-        Status = StatusCodes.Status500InternalServerError,
-        Title = "Ett fel uppstod. Försök igen senare.",
-        Extensions = { ["errorId"] = errorId }
-    });
-}));
+app.UseExceptionHandler();
 
 // Tomma felsvar (401, 403, 404) får ett enhetligt ProblemDetails-svar
 app.UseStatusCodePages();

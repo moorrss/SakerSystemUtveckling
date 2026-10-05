@@ -1,11 +1,12 @@
 using JensenOnline.Api.Data;
 using JensenOnline.Api.Dtos;
-using JensenOnline.Api.Models;
-using JensenOnline.Api.Services;
+using JensenOnline.Api.Data.Entities;
+using JensenOnline.Api.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using JensenOnline.Api.Core.Interfaces;
 
 namespace JensenOnline.Api.Controllers;
 
@@ -19,9 +20,9 @@ public class AuthController : ControllerBase
 
     private readonly UserManager<AppUser> _userManager;
     private readonly SignInManager<AppUser> _signInManager;
-    private readonly TokenService _tokenService;
+    private readonly ITokenService _tokenService;
 
-    public AuthController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, TokenService tokenService)
+    public AuthController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, ITokenService tokenService)
     {
         _userManager = userManager;
         _signInManager = signInManager;

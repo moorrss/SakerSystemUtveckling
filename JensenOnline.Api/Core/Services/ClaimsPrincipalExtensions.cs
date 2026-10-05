@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Microsoft.IdentityModel.JsonWebTokens;
 
-namespace JensenOnline.Api.Services;
+namespace JensenOnline.Api.Core.Services;
 
 public static class ClaimsPrincipalExtensions
 {

@@ -1,4 +1,4 @@
-using JensenOnline.Api.Models;
+using JensenOnline.Api.Data.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 

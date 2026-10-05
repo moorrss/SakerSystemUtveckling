@@ -1,10 +1,11 @@
 using System.Security.Claims;
-using JensenOnline.Api.Models;
+using JensenOnline.Api.Data.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using JensenOnline.Api.Core.Interfaces;
 
-namespace JensenOnline.Api.Services;
+namespace JensenOnline.Api.Core.Services;
 
 public class JwtSettings
 {
@@ -14,7 +15,7 @@ public class JwtSettings
     public SymmetricSecurityKey SigningKey { get; init; } = null!;
 }
 
-public class TokenService
+public class TokenService : ITokenService
 {
     public const string CookieName = "access_token";
 

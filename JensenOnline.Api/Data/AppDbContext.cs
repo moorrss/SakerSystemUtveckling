@@ -1,4 +1,4 @@
-using JensenOnline.Api.Models;
+using JensenOnline.Api.Data.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,6 +12,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -37,6 +38,15 @@ public class AppDbContext : IdentityDbContext<AppUser>
         {
             e.Property(i => i.UnitPrice).HasPrecision(18, 2);
             e.HasOne(i => i.Product).WithMany().HasForeignKey(i => i.ProductId).OnDelete(DeleteBehavior.Restrict);
+        });
+        
+        builder.Entity<AuditLog>(e =>
+        {
+            e.Property(a => a.Action).HasMaxLength(50).IsRequired();
+            e.Property(a => a.Details).HasMaxLength(500);
+            e.Property(a => a.Email).HasMaxLength(256);
+            e.Property(a => a.IpAddress).HasMaxLength(64);
+            e.HasIndex(a => a.Timestamp);
         });
     }
 }

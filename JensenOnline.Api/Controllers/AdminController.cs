@@ -1,7 +1,7 @@
 using JensenOnline.Api.Data;
 using JensenOnline.Api.Dtos;
-using JensenOnline.Api.Models;
-using JensenOnline.Api.Services;
+using JensenOnline.Api.Data.Entities;
+using JensenOnline.Api.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
