@@ -120,3 +120,14 @@ Content-Type: application/json
 
 ### 25. Admin läser audit-loggen (logga in som admin först, anrop 16) -> 200
 GET {{baseUrl}}/api/admin/audit
+
+### 26. ATTACK (T9): förfalskad token med "alg": "none" och rollen Admin -> ska ge 401
+# @no-cookie-jar
+GET {{baseUrl}}/api/admin/users
+Cookie: access_token=eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJoYWNrZXIiLCJyb2xlIjoiQWRtaW4ifQ.
+
+### 27. ATTACK (CSRF): order skickad som HTML-formulär i stället för JSON -> ska ge 415
+POST {{baseUrl}}/api/orders
+Content-Type: application/x-www-form-urlencoded
+
+items[0].productId=1&items[0].quantity=1&shippingAddress=Hackargatan 1

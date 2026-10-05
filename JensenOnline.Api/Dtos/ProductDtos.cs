@@ -20,12 +20,13 @@ public class ProductInputDto
 {
     // Allowlist: bara bokstäver, siffror och vanliga tecken.
     // < och > avvisas, vilket stoppar HTML och skript i produktnamn (T4)
-    [Required, StringLength(100, MinimumLength = 2)]
-    [RegularExpression(@"^[\p{L}\p{N} \-.,:()'&/+%""]+$", ErrorMessage = "Namnet innehåller otillåtna tecken.")]
+        [Required(ErrorMessage = "Namn måste anges.")]
+        [StringLength(100, MinimumLength = 2, ErrorMessage = "Namnet måste vara 2–100 tecken.")]
+        [RegularExpression(@"^[\p{L}\p{N} \-.,:()'&/+%""]+$", ErrorMessage = "Namnet innehåller otillåtna tecken.")]
     public string Name { get; set; } = "";
 
     // Fritext är tillåten, men frontend visar den alltid som text (textContent)
-    [StringLength(1000)]
+      [StringLength(1000, ErrorMessage = "Beskrivningen får vara högst 1 000 tecken.")]
     public string Description { get; set; } = "";
 
     // Invariant kultur, annars tolkas "0.01" fel på en svensk dator (decimalkomma)
@@ -34,7 +35,7 @@ public class ProductInputDto
         ErrorMessage = "Priset måste vara mellan 0,01 och 1 000 000.")]
     public decimal Price { get; set; }
 
-    [Range(0, 100000)]
+       [Range(0, 100000, ErrorMessage = "Lagret måste vara mellan 0 och 100 000.")]
     public int Stock { get; set; }
 }
 
