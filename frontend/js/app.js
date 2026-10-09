@@ -6,7 +6,6 @@ import { initProducts, loadProducts } from './products.js';
 import { isAdmin, isLoggedIn, onUserChange } from './state.js';
 import { clearFlash, flash, navigate } from './ui.js';
 
-// Enkel router baserad på #-delen av URL:en
 const routes = {
   products: { load: loadProducts },
   cart: { load: renderCart },
@@ -20,8 +19,6 @@ function route() {
   const current = Object.hasOwn(routes, name) ? name : 'products';
   const config = routes[current];
 
-  // Dessa kontroller visar bara rätt sida. Om någon kringgår dem
-  // i DevTools nekar backend ändå anropen med 401/403.
   if (config.requires === 'user' && !isLoggedIn()) {
     flash('Logga in för att se dina ordrar.', 'info', [], { keep: true });
     navigate('#login');

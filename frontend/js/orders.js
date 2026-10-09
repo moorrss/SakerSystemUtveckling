@@ -1,8 +1,7 @@
 import { api } from './api.js';
 import { el, clear, formatDate, formatPrice, handleError } from './ui.js';
 
-// Hämtar bara den inloggade användarens egna ordrar. VILKA ordrar avgörs
-// av servern utifrån token, inte av något ID som frontend skickar (T6).
+
 export async function loadOrders() {
   const list = document.getElementById('order-list');
   try {

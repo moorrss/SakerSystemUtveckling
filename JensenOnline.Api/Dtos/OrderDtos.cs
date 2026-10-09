@@ -11,7 +11,6 @@ public class CreateOrderDto
     public string ShippingAddress { get; set; } = "";
 }
 
-// Klienten skickar BARA produkt-ID och antal. Inget pris! (T3)
 public class OrderItemInputDto
 {
     [Range(1, int.MaxValue)]

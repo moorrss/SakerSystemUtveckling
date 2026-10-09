@@ -4,8 +4,6 @@ using JensenOnline.Api.Core.Interfaces;
 
 namespace JensenOnline.Api.Core.Services;
 
-// Audit logging (T5): vem gjorde vad, när och varifrån?
-// Lösenord, tokens och andra hemligheter loggas ALDRIG.
 public class AuditService : IAuditService
 {
     public static class Actions
@@ -52,8 +50,6 @@ public class AuditService : IAuditService
             IpAddress = context?.Connection.RemoteIpAddress?.ToString()
         };
 
-        // Skrivs både till databasen (spårbarhet) och till applikationsloggen (övervakning).
-        // I produktion skickas loggarna till en extern, skrivskyddad loggtjänst.
         _logger.LogInformation("AUDIT {Action} success={Success} user={Email} ip={Ip} {Details}",
             entry.Action, entry.Success, entry.Email, entry.IpAddress, entry.Details);
 
@@ -64,8 +60,6 @@ public class AuditService : IAuditService
         }
         catch (Exception ex)
         {
-            // Om loggen inte kan skrivas ska det synas i applikationsloggen,
-            // men anropet för användaren får inte krascha
             _logger.LogError(ex, "Kunde inte skriva audit-logg för {Action}", action);
         }
     }

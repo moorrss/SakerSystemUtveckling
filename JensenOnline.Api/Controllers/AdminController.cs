@@ -10,7 +10,6 @@ using JensenOnline.Api.Core.Interfaces;
 
 namespace JensenOnline.Api.Controllers;
 
-// HELA controllern kräver rollen Admin (T9). En kund får 403 på allt här.
 [ApiController]
 [Route("api/admin")]
 [Authorize(Roles = DbSeeder.AdminRole)]
@@ -54,7 +53,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    // Admin kan spärra ett konto, t.ex. vid misstänkt kontoövertagande
     [HttpPut("users/{id}/lock")]
     [Consumes("application/json")]
     public async Task<IActionResult> SetLock(string id, SetLockDto dto)
@@ -79,8 +77,7 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-        // Audit-loggen kan bara LÄSAS. Det finns ingen endpoint för att ändra eller radera poster,
-    // så inte ens en admin kan sopa igen spåren efter sig (T5)
+      
     [HttpGet("audit")]
     public async Task<ActionResult<IReadOnlyList<AuditLogDto>>> GetAuditLog()
     {

@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace JensenOnline.Api.Data;
 
-// IdentityDbContext ger tabellerna för användare, roller och lösenordshashar
 public class AppDbContext : IdentityDbContext<AppUser>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }

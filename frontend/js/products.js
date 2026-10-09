@@ -37,8 +37,6 @@ function renderProducts(list, products) {
     const qty = el('input', { type: 'number', min: 1, max: 100, value: 1, class: 'qty' });
     const soldOut = product.stock <= 0;
 
-    // Namn och beskrivning läggs in som TEXT via el(). Även om någon sparat
-    // <script> eller <img onerror=...> visas det bara som tecken (T4).
     list.append(el('article', { class: 'card product' },
       el('h3', {}, product.name),
       el('p', {}, product.description),

@@ -18,15 +18,12 @@ public static class DbSeeder
 
         await db.Database.EnsureCreatedAsync();
 
-        // Rollerna Admin och Customer
         foreach (var role in new[] { AdminRole, CustomerRole })
         {
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new IdentityRole(role));
         }
 
-        // Testkonton skapas BARA i utvecklingsmiljön.
-        // Admins kan aldrig skapas via API:t, bara här eller av en befintlig admin.
         if (env.IsDevelopment())
         {
             await CreateUserAsync(userManager, "admin@jensenonline.se", "Admin-Demo-2026!", AdminRole);

@@ -4,8 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>JENSENOnline</title>
-  <!-- All CSS och JavaScript ligger i egna filer. Inga inline-skript eller onclick-attribut,
-       eftersom Content Security Policy (steg 6) blockerar dem (skydd mot XSS). -->
+  
   <link rel="stylesheet" href="css/style.css">
   <script type="module" src="js/app.js"></script>
 </head>
@@ -54,7 +53,6 @@
         <label for="shipping-address">Adress</label>
         <input id="shipping-address" name="shippingAddress" required minlength="5" maxlength="200">
         <button type="submit" class="btn">Lägg order</button>
-        <p class="muted">Priset räknas ut av servern när ordern läggs.</p>
       </form>
     </section>
 

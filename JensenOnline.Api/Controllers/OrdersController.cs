@@ -11,13 +11,13 @@ namespace JensenOnline.Api.Controllers;
 
 [ApiController]
 [Route("api/orders")]
-[Authorize] // alla order-endpoints kräver inloggning
+[Authorize] 
 public class OrdersController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IAuditService _audit;
 
-    //Här sätts DI upp för controllern
+   
     public OrdersController(AppDbContext db, IAuditService audit)
     {
         _db = db;
@@ -42,7 +42,6 @@ public class OrdersController : ControllerBase
             .Where(p => productIds.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id);
 
-        // Steg 1: kontrollera allt innan något ändras
         foreach (var (productId, quantity) in requested)
         {
             if (!products.TryGetValue(productId, out var product))
@@ -55,11 +54,11 @@ public class OrdersController : ControllerBase
 
         var order = new Order
         {
-            UserId = userId, // ägaren kommer från token, aldrig från klienten (T6)
+            UserId = userId,
             ShippingAddress = dto.ShippingAddress.Trim()
         };
 
-        // Steg 2: skapa orderrader med priset FRÅN DATABASEN (T3)
+   
         foreach (var (productId, quantity) in requested)
         {
             var product = products[productId];
@@ -67,21 +66,19 @@ public class OrdersController : ControllerBase
             order.Items.Add(new OrderItem { ProductId = productId, Quantity = quantity, UnitPrice = product.Price });
         }
 
-        // Totalsumman räknas ut av servern
         order.TotalAmount = order.Items.Sum(i => i.UnitPrice * i.Quantity);
 
         _db.Orders.Add(order);
         await _db.SaveChangesAsync();
         await transaction.CommitAsync();
 
-        // Logga ordern med totalsumman som SERVERN räknade ut (T3, T5)
+      
         await _audit.LogAsync(AuditService.Actions.OrderCreated, true,
             $"Order {order.Id}, totalt {order.TotalAmount} kr");
 
         return CreatedAtAction(nameof(GetById), new { id = order.Id }, ToDto(order));
     }
 
-    // Bara den inloggade användarens egna ordrar (T6)
     [HttpGet("mine")]
     public async Task<ActionResult<IReadOnlyList<OrderDto>>> GetMine()
     {
@@ -96,8 +93,6 @@ public class OrdersController : ControllerBase
         return Ok(orders.Select(ToDto).ToList());
     }
 
-    // Skydd mot IDOR (T6): ordern måste tillhöra användaren, eller så måste användaren vara admin.
-    // Rollen räcker inte ensam, eftersom ALLA kunder har rollen Customer.
     [HttpGet("{id:int}")]
     public async Task<ActionResult<OrderDto>> GetById(int id)
     {
@@ -111,8 +106,7 @@ public class OrdersController : ControllerBase
 
         if (order is null)
         {
-            // Finns ordern, men tillhör någon annan? Då är det ett IDOR-försök som ska loggas (T6, T5).
-            // Användaren får ändå 404, så angriparen får inte veta att ordern finns
+        
             if (await _db.Orders.AnyAsync(o => o.Id == id))
                 await _audit.LogAsync(AuditService.Actions.OrderAccessDenied, false, $"Försökte läsa order {id}");
 

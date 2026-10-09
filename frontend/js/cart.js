@@ -2,10 +2,6 @@ import { api } from './api.js';
 import { isLoggedIn } from './state.js';
 import { el, clear, flash, formatPrice, handleError, navigate } from './ui.js';
 
-// Kundvagnen ligger i sessionStorage. Den innehåller inga hemligheter.
-// Priset här används BARA för visning: när ordern läggs skickas endast
-// produkt-ID och antal, och servern räknar ut priset (T3).
-
 const STORAGE_KEY = 'jensenonline-cart';
 
 function readCart() {
@@ -21,7 +17,7 @@ function writeCart(items) {
   try {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   } catch {
-    // sessionStorage kan vara avstängt, t.ex. i privat läge
+    
   }
   updateCartCount();
 }
@@ -107,7 +103,7 @@ export function initCart() {
       const order = await api('/api/orders', {
         method: 'POST',
         body: {
-          // Endast produkt-ID och antal skickas, INGET pris (T3)
+        
           items: readCart().map(i => ({ productId: i.productId, quantity: i.quantity })),
           shippingAddress: form.shippingAddress.value.trim()
         }

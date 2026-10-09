@@ -1,8 +1,5 @@
 import { state, setUser } from './state.js';
 
-// Skapar DOM-element SÄKERT. All text läggs in som textnoder (samma som textContent),
-// så data från användare eller databasen tolkas ALDRIG som HTML.
-// Därför används innerHTML inte någonstans i frontenden (skydd mot XSS, T4).
 export function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
 
@@ -67,7 +64,6 @@ export function clearFlash() {
   clear(box);
 }
 
-// Byter sida. Om adressen redan är rätt skickas hashchange ändå, så att sidan laddas om.
 export function navigate(hash) {
   if (location.hash === hash) {
     window.dispatchEvent(new HashChangeEvent('hashchange'));
@@ -76,7 +72,6 @@ export function navigate(hash) {
   }
 }
 
-// Gemensam felhantering för anrop till API:t
 export function handleError(error) {
   if (error.status === 401 && state.user !== null) {
     setUser(null);

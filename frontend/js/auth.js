@@ -2,8 +2,6 @@ import { api } from './api.js';
 import { setUser } from './state.js';
 import { flash, handleError, navigate } from './ui.js';
 
-// Hämtar vem som är inloggad. Frontend kan inte läsa token (HttpOnly-cookie),
-// så servern får svara på frågan.
 export async function loadCurrentUser() {
   try {
     const user = await api('/api/auth/me');
@@ -60,10 +58,10 @@ export function initAuth() {
 
   document.getElementById('logout-button').addEventListener('click', async () => {
     try {
-      // Servern tar bort cookien, eftersom JavaScript inte kan radera en HttpOnly-cookie
+  
       await api('/api/auth/logout', { method: 'POST' });
     } catch {
-      // Användaren loggas ut i gränssnittet även om anropet misslyckas
+    
     }
     setUser(null);
     flash('Du är utloggad.', 'info', [], { keep: true });

@@ -1,5 +1,4 @@
-// Inloggad användare. Används BARA för att visa rätt meny.
-// Behörigheten kontrolleras alltid i backend, så att ändra detta i DevTools ger ingen åtkomst.
+
 
 const listeners = [];
 

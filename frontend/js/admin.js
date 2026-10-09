@@ -2,8 +2,6 @@ import { api } from './api.js';
 import { state } from './state.js';
 import { el, clear, flash, formatDate, formatPrice, handleError } from './ui.js';
 
-// Adminsidan syns bara för admins i menyn, men det är bara bekvämlighet.
-// VARJE anrop härifrån kontrolleras av [Authorize(Roles = "Admin")] i backend (T9).
 
 let activeTab = 'admin-products';
 

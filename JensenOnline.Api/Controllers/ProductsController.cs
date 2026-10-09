@@ -16,13 +16,12 @@ public class ProductsController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IAuditService _audit;
 
-    //Här sätts DI upp för controllern
     public ProductsController(AppDbContext db, IAuditService audit)
     {
         _db = db;
         _audit = audit;
     }
-    // Visa och söka är öppet för alla
+
     [HttpGet]
     [AllowAnonymous]
     public async Task<ActionResult<PagedResult<ProductDto>>> GetProducts([FromQuery] ProductQuery query)
@@ -31,8 +30,7 @@ public class ProductsController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
-            // Söktermen skickas som en PARAMETER till databasen och kan aldrig köras som SQL (T2).
-            // % och _ escapas så att de söks som vanliga tecken.
+       
             var pattern = "%" + EscapeLike(query.Search.Trim()) + "%";
             products = products.Where(p =>
                 EF.Functions.Like(p.Name, pattern, "\\") ||
@@ -59,8 +57,7 @@ public class ProductsController : ControllerBase
         return Ok(new ProductDto(p.Id, p.Name, p.Description, p.Price, p.Stock));
     }
 
-    // Skapa, ändra och ta bort kräver rollen Admin. Kontrollen sker HÄR i backend,
-    // så det hjälper inte att anropa API:t direkt och kringgå frontend (T9).
+
     [HttpPost]
     [Authorize(Roles = DbSeeder.AdminRole)]
     [Consumes("application/json")]
@@ -77,7 +74,7 @@ public class ProductsController : ControllerBase
         await _db.SaveChangesAsync();
 
         
-        // Admin-åtgärder loggas så att det går att se vem som ändrade vad (T5)
+     
         await _audit.LogAsync(AuditService.Actions.ProductCreated, true,
             $"Id {product.Id}: {product.Name}, pris {product.Price}");
 
@@ -94,7 +91,7 @@ public class ProductsController : ControllerBase
         if (product is null) return NotFound();
 
         
-        var oldPrice = product.Price; // spara gamla priset innan det skrivs över på raden nedan
+        var oldPrice = product.Price; 
 
         product.Name = dto.Name.Trim();
         product.Description = dto.Description.Trim();
@@ -103,7 +100,7 @@ public class ProductsController : ControllerBase
         await _db.SaveChangesAsync();
 
         
-        // Prisändringar är extra viktiga att kunna spåra (t.ex. om ett admin-konto kapas)
+      
         await _audit.LogAsync(AuditService.Actions.ProductUpdated, true,
             $"Id {product.Id}: {product.Name}, pris {oldPrice} -> {product.Price}");
 
@@ -118,7 +115,7 @@ public class ProductsController : ControllerBase
         var product = await _db.Products.FirstOrDefaultAsync(p => p.Id == id);
         if (product is null) return NotFound();
 
-        // Produkter som finns i ordrar får inte tas bort, då förstörs orderhistoriken
+       
         if (await _db.OrderItems.AnyAsync(i => i.ProductId == id))
             return Problem(title: "Produkten finns i ordrar och kan inte tas bort.", statusCode: StatusCodes.Status409Conflict);
 
