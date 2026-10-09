@@ -22,5 +22,5 @@ RUN mkdir -p /app/data && chown $APP_UID /app/data
 
 USER $APP_UID
 
-EXPOSE 8080
+EXPOSE 8080 8443
 ENTRYPOINT ["dotnet", "JensenOnline.Api.dll"]
